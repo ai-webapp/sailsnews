@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SailNews – Le Tue Vele, Le Tue News</title>
+  <style>
+    /* ========== RESET & VARIABLES ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-primary: #0d5c8c;
+      --color-primary-hover: #0a4a73;
+      --color-accent: #1a9fd4;
+      --color-success: #0d8a5e;
+      --color-error: #c23d3d;
+      --color-warning: #d97706;
+      --color-bg: #f0f6fa;
+      --color-surface: #ffffff;
+      --color-text: #1a2d3a;
+      --color-text-muted: #5c7280;
+      --color-border: #d4e2eb;
+      --shadow-sm: 0 1px 3px rgba(13, 92, 140, 0.08);
+      --shadow-md: 0 4px 12px rgba(13, 92, 140, 0.12);
+      --shadow-lg: 0 8px 24px rgba(13, 92, 140, 0.15);
+      --radius: 12px;
+      --radius-btn: 10px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ========== LAYOUT ========== */
+    .app {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    /* ========== HERO SECTION ========== */
+    .hero {
+      text-align: center;
+      padding: 40px 20px 48px;
+    }
+    .hero__logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .hero h2 {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      font-weight: 400;
+      color: var(--color-text-muted);
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+    .hero__cta-wrap {
+      margin-bottom: 12px;
+    }
+    .hero__microcopy {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ========== CTA BUTTON ========== */
+    .btn-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      font-family: var(--font);
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: #fff;
+      background: var(--color-primary);
+      border: none;
+      border-radius: var(--radius-btn);
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn-cta:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      transform: scale(1.05);
+      box-shadow: var(--shadow-md);
+    }
+    .btn-cta:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+    .btn-cta:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    .btn-cta:disabled {
+      cursor: not-allowed;
+      opacity: 0.75;
+    }
+    .btn-cta--loading {
+      opacity: 0.85;
+    }
+    .btn-cta--success {
+      background: var(--color-success);
+      pointer-events: none;
+    }
+    .btn-cta--error {
+      background: var(--color-warning);
+      color: #fff;
+    }
+    .btn-cta--error:hover:not(:disabled) {
+      background: #b36205;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .btn-cta .icon-check {
+      width: 20px;
+      height: 20px;
+      stroke: #fff;
+      stroke-width: 2.5;
+      fill: none;
+      animation: checkPop 0.3s ease;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes checkPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ========== NEWS SECTION ========== */
+    .news-section {
+      margin-top: 16px;
+    }
+    .news-section__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--color-text);
+    }
+
+    /* Responsive grid: 1 col mobile, 2 tablet, 3 desktop */
+    .news-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 768px) {
+      .news-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 1024px) {
+      .news-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+    }
+
+    /* ========== NEWS CARD ========== */
+    .news-card {
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+    }
+    .news-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .news-card:active {
+      transform: translateY(-2px) scale(0.99);
+    }
+    .news-card:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    /* Box immagine fisso 16:9: stessa altezza per tutte le card */
+    .news-card__thumb-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: linear-gradient(135deg, #d4e2eb 0%, #e8f0f5 100%);
+      flex-shrink: 0;
+    }
+    .news-card__thumb {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .news-card__thumb-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-muted);
+      font-size: 2.5rem;
+      opacity: 0.6;
+    }
+    .news-card__body {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .news-card__badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      background: rgba(13, 92, 140, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      width: fit-content;
+    }
+    .news-card__title {
+      font-size: 1.0625rem;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .news-card__meta {
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      margin-bottom: 8px;
+    }
+    .news-card__excerpt {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: auto;
+    }
+
+    /* ========== SKELETON CARDS ========== */
+    .skeleton-card {
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .skeleton-card__thumb {
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(90deg, #e8f0f5 25%, #d4e2eb 50%, #e8f0f5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    .skeleton-card__body {
+      padding: 16px;
+    }
+    .skeleton-card__line {
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #e8f0f5 25%, #d4e2eb 50%, #e8f0f5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+      margin-bottom: 10px;
+    }
+    .skeleton-card__line--short { width: 40%; }
+    .skeleton-card__line--medium { width: 70%; }
+    .skeleton-card__line--long { width: 100%; }
+    .skeleton-card__line:last-child { margin-bottom: 0; }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Stagger delay for skeleton and real cards */
+    .news-grid .skeleton-card:nth-child(1) { animation-delay: 0ms; }
+    .news-grid .news-card:nth-child(1), .news-grid .skeleton-card:nth-child(1) .skeleton-card__thumb { animation-delay: 0ms; }
+    .news-grid .news-card:nth-child(2), .news-grid .skeleton-card:nth-child(2) .skeleton-card__thumb { animation-delay: 50ms; }
+    .news-grid .news-card:nth-child(3), .news-grid .skeleton-card:nth-child(3) .skeleton-card__thumb { animation-delay: 100ms; }
+    .news-grid .news-card:nth-child(4), .news-grid .skeleton-card:nth-child(4) .skeleton-card__thumb { animation-delay: 150ms; }
+    .news-grid .news-card:nth-child(5), .news-grid .skeleton-card:nth-child(5) .skeleton-card__thumb { animation-delay: 200ms; }
+    .news-grid .news-card:nth-child(6), .news-grid .skeleton-card:nth-child(6) .skeleton-card__thumb { animation-delay: 250ms; }
+    .news-grid .news-card:nth-child(7), .news-grid .skeleton-card:nth-child(7) .skeleton-card__thumb { animation-delay: 300ms; }
+    .news-grid .news-card:nth-child(8), .news-grid .skeleton-card:nth-child(8) .skeleton-card__thumb { animation-delay: 350ms; }
+    .news-grid .news-card:nth-child(9), .news-grid .skeleton-card:nth-child(9) .skeleton-card__thumb { animation-delay: 400ms; }
+    .news-grid .news-card:nth-child(10), .news-grid .skeleton-card:nth-child(10) .skeleton-card__thumb { animation-delay: 450ms; }
+    .news-grid .news-card:nth-child(11), .news-grid .skeleton-card:nth-child(11) .skeleton-card__thumb { animation-delay: 500ms; }
+    .news-grid .news-card:nth-child(12), .news-grid .skeleton-card:nth-child(12) .skeleton-card__thumb { animation-delay: 550ms; }
+
+    .news-card {
+      animation: cardFadeIn 0.4s ease forwards;
+    }
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== EMPTY / STATE MESSAGES ========== */
+    .state-message {
+      text-align: center;
+      padding: 48px 24px;
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .state-message__icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.8;
+    }
+    .state-message__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--color-text);
+    }
+    .state-message__text {
+      font-size: 1rem;
+      color: var(--color-text-muted);
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .state-message--loading .state-message__text {
+      margin-top: 8px;
+    }
+    .state-message--loading-text {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--color-text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* ========== TOAST ========== */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 14px 20px;
+      border-radius: var(--radius-btn);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      animation: toastIn 0.3s ease;
+      pointer-events: auto;
+    }
+    .toast--success {
+      background: var(--color-success);
+      color: #fff;
+    }
+    .toast--error {
+      background: var(--color-error);
+      color: #fff;
+    }
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(-12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .toast.toast--out {
+      animation: toastOut 0.3s ease forwards;
+    }
+    @keyframes toastOut {
+      to {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+    }
+
+    /* ========== UTILITY: HIDDEN ========== */
+    .u-hidden {
+      display: none !important;
+    }
+
+    /* ========== LAST UPDATE ========== */
+    .last-update {
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="main">
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero__logo" aria-hidden="true">SailNews</div>
+      <h1>Le Tue Vele, Le Tue News. Sempre Aggiornate.</h1>
+      <h2>Scopri cosa succede nel mondo della vela. Regate, innovazioni, storie dal mare. Tutto in tempo reale.</h2>
+      <div class="hero__cta-wrap">
+        <button
+          type="button"
+          class="btn-cta"
+          id="btnLoadNews"
+          aria-label="Carica ultime news dal mondo della vela"
+          aria-live="polite"
+        >
+          <span class="btn-cta__text">⚓ Carica Ultime News</span>
+        </button>
+      </div>
+      <p class="hero__microcopy" id="microcopy">Aggiornato pochi secondi fa • Fonti verificate</p>
+      <p class="last-update u-hidden" id="lastUpdate" aria-live="polite"></p>
+    </header>
+
+    <!-- News section -->
+    <section class="news-section" aria-label="Elenco news">
+      <h2 class="news-section__title u-hidden" id="sectionTitle">Ultime dal mondo della vela</h2>
+
+      <!-- IDLE: empty state -->
+      <div class="state-message" id="stateIdle" role="status">
+        <div class="state-message__icon" aria-hidden="true">⛵</div>
+        <p class="state-message__title">Pronto a salpare?</p>
+        <p class="state-message__text">Clicca per scoprire le ultime dal mondo sailing.</p>
+      </div>
+
+      <!-- LOADING: skeleton grid -->
+      <div class="u-hidden" id="stateLoading" role="status" aria-busy="true" aria-label="Caricamento news in corso">
+        <p class="state-message--loading-text" id="stateLoadingText">Issando le vele... Caricamento news in corso</p>
+        <div class="news-grid" id="stateLoadingGrid"><!-- 12 skeleton cards injected by JS --></div>
+      </div>
+
+      <!-- SUCCESS: news grid -->
+      <div class="news-grid u-hidden" id="stateSuccess" role="list"></div>
+
+      <!-- ERROR: message -->
+      <div class="state-message u-hidden" id="stateError" role="alert">
+        <div class="state-message__icon" aria-hidden="true">⚠</div>
+        <p class="state-message__title">Vento contrario!</p>
+        <p class="state-message__text">Impossibile caricare le news. Riprova tra poco.</p>
+      </div>
+
+      <!-- NO_RESULTS -->
+      <div class="state-message u-hidden" id="stateNoResults" role="status">
+        <div class="state-message__icon" aria-hidden="true">🌊</div>
+        <p class="state-message__title">Bonaccia totale.</p>
+        <p class="state-message__text">Nessuna nuova notizia al momento. Prova a refreshare tra qualche minuto.</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ---------- State ----------
+      const APP_STATE = { IDLE: 'idle', LOADING: 'loading', SUCCESS: 'success', ERROR: 'error', NO_RESULTS: 'no_results' };
+      const BTN_STATE = { DEFAULT: 'default', LOADING: 'loading', SUCCESS: 'success', ERROR: 'error' };
+
+      let appState = APP_STATE.IDLE;
+      let btnState = BTN_STATE.DEFAULT;
+      let lastUpdateTime = null;
+
+      const dom = {
+        btnLoadNews: document.getElementById('btnLoadNews'),
+        btnCtaText: document.querySelector('.btn-cta__text'),
+        microcopy: document.getElementById('microcopy'),
+        lastUpdate: document.getElementById('lastUpdate'),
+        sectionTitle: document.getElementById('sectionTitle'),
+        stateIdle: document.getElementById('stateIdle'),
+        stateLoading: document.getElementById('stateLoading'),
+        stateSuccess: document.getElementById('stateSuccess'),
+        stateError: document.getElementById('stateError'),
+        stateNoResults: document.getElementById('stateNoResults'),
+        toastContainer: document.getElementById('toastContainer'),
+      };
+
+      // ---------- Mock API (simula risposta n8n) ----------
+      const MOCK_NEWS = [
+        {
+          id: 'mock-1',
+          title: 'America\'s Cup: Team New Zealand domina le prime regate',
+          source: 'Sail World',
+          sourceUrl: 'https://www.sail-world.com',
+          publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Il team neozelandese ha dimostrato una velocità superiore nelle condizioni di vento forte nelle prime prove.',
+          imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600',
+          category: 'Regata',
+        },
+        {
+          id: 'mock-2',
+          title: 'Nuova tecnologia per vele più efficienti presentata da North Sails',
+          source: 'North Sails',
+          sourceUrl: 'https://www.northsails.com',
+          publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'La rivoluzionaria membrana in fibra di carbonio promette un aumento del 15% in efficienza.',
+          imageUrl: 'https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=600',
+          category: 'Tecnologia',
+        },
+        {
+          id: 'mock-3',
+          title: 'Vendée Globe: i primi arrivati al porto',
+          source: 'Sail World',
+          sourceUrl: 'https://www.sail-world.com',
+          publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Dopo mesi in mare, i primi skipper tagliano il traguardo. Emozioni e dati di bordo.',
+          imageUrl: '',
+          category: 'Regata',
+        },
+        {
+          id: 'mock-4',
+          title: 'Ocean Race 2026: route e team annunciati',
+          source: 'The Ocean Race',
+          sourceUrl: 'https://www.theoceanrace.com',
+          publishedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Partenza da Alicante, tappe in tutti i continenti. Ecco i team che si sfideranno.',
+          imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600',
+          category: 'Team News',
+        },
+        {
+          id: 'mock-5',
+          title: 'Eliche e sistemi ibridi: il futuro della propulsione a vela',
+          source: 'Yachting World',
+          sourceUrl: 'https://www.yachtingworld.com',
+          publishedAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Analisi delle soluzioni ibride per ridurre emissioni e aumentare autonomia.',
+          imageUrl: 'https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=600',
+          category: 'Tecnologia',
+        },
+        {
+          id: 'mock-6',
+          title: 'Coppa America: regolamento e date 2026',
+          source: 'America\'s Cup',
+          sourceUrl: 'https://www.americascup.com',
+          publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Tutte le novità sul regolamento e il calendario della prossima edizione.',
+          imageUrl: '',
+          category: 'Regata',
+        },
+        {
+          id: 'mock-7',
+          title: 'Vela giovanile: i campionati italiani under 21',
+          source: 'FIV',
+          sourceUrl: 'https://www.federvela.it',
+          publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Risultati e interviste dai campionati italiani di vela giovanile.',
+          imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600',
+          category: 'Team News',
+        },
+        {
+          id: 'mock-8',
+          title: 'Materiali sostenibili per barche e attrezzature',
+          source: 'North Sails',
+          sourceUrl: 'https://www.northsails.com',
+          publishedAt: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Riciclo e materiali a basso impatto: le tendenze del settore nautico.',
+          imageUrl: 'https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=600',
+          category: 'Tecnologia',
+        },
+        {
+          id: 'mock-9',
+          title: 'Transat Jacques Vabre: partenza da Le Havre',
+          source: 'Sail World',
+          sourceUrl: 'https://www.sail-world.com',
+          publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'La transatlantica in doppio è partita con vento e spettacolo.',
+          imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600',
+          category: 'Regata',
+        },
+        {
+          id: 'mock-10',
+          title: 'Team Luna Rossa: aggiornamenti sulla barca AC75',
+          source: 'Luna Rossa',
+          sourceUrl: 'https://www.lunarossachallenge.com',
+          publishedAt: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Dettagli tecnici e preparazione della campagna America\'s Cup.',
+          imageUrl: '',
+          category: 'Team News',
+        },
+        {
+          id: 'mock-11',
+          title: 'Meteo e routing: strumenti per il cruising e la regata',
+          source: 'Yachting World',
+          sourceUrl: 'https://www.yachtingworld.com',
+          publishedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+          excerpt: 'App e servizi per pianificare le rotte in sicurezza e performance.',
+          imageUrl: 'https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=600',
+          category: 'Tecnologia',
+        },
+        {
+          id: 'mock-12',
+          title: 'World Sailing: nuove classi olimpiche e paralimpiche',
+          source: 'World Sailing',
+          sourceUrl: 'https://www.sailing.org',
+          publishedAt: new Date(Date.now() - 120 * 60 * 60 * 1000).toISOString(),
+          excerpt: 'Le decisioni del consiglio su classi e regolamenti per i prossimi Giochi.',
+          imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600',
+          category: 'Regata',
+        },
+      ];
+
+      function getMockResponse() {
+        return {
+          status: 'success',
+          timestamp: new Date().toISOString(),
+          count: MOCK_NEWS.length,
+          news: MOCK_NEWS.map(function (n) {
+            return {
+              id: n.id,
+              title: n.title,
+              source: n.source,
+              sourceUrl: n.sourceUrl,
+              publishedAt: n.publishedAt,
+              excerpt: n.excerpt,
+              imageUrl: n.imageUrl || '',
+              category: n.category || 'News',
+            };
+          }),
+        };
+      }
+
+      // ---------- Relative time (locale-friendly) ----------
+      function getRelativeTime(isoDate) {
+        var date = new Date(isoDate);
+        var now = new Date();
+        var diffMs = now - date;
+        var diffM = Math.floor(diffMs / 60000);
+        var diffH = Math.floor(diffMs / 3600000);
+        var diffD = Math.floor(diffMs / 86400000);
+
+        if (diffM < 1) return 'Adesso';
+        if (diffM < 60) return diffM === 1 ? '1 minuto fa' : diffM + ' minuti fa';
+        if (diffH < 24) return diffH === 1 ? '1 ora fa' : diffH + ' ore fa';
+        if (diffD === 1) {
+          var h = date.getHours();
+          var m = date.getMinutes();
+          return 'Ieri alle ' + (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+        }
+        if (diffD < 7) return diffD + ' giorni fa';
+        return date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      // ---------- Truncate text ----------
+      function truncate(str, maxLen) {
+        if (!str) return '';
+        str = String(str);
+        return str.length <= maxLen ? str : str.slice(0, maxLen).trim() + '...';
+      }
+
+      // ---------- Fetch news (mock o API reale) ----------
+      function fetchNews() {
+        // Per integrazione n8n: sostituire con fetch('URL_WEBHOOK_N8N')
+        return new Promise(function (resolve, reject) {
+          setTimeout(function () {
+            resolve(getMockResponse());
+            // Per test errore: reject(new Error('Network error'));
+          }, 1200);
+        });
+      }
+
+      // ---------- UI: button state ----------
+      function setButtonState(state) {
+        btnState = state;
+        var btn = dom.btnLoadNews;
+        btn.classList.remove('btn-cta--loading', 'btn-cta--success', 'btn-cta--error');
+        btn.disabled = false;
+
+        var textEl = dom.btnCtaText;
+        while (textEl.firstChild) textEl.removeChild(textEl.firstChild);
+
+        if (state === BTN_STATE.LOADING) {
+          btn.disabled = true;
+          btn.classList.add('btn-cta--loading');
+          textEl.appendChild(document.createTextNode('⚓ Caricamento... '));
+          var spinner = document.createElement('span');
+          spinner.className = 'spinner';
+          spinner.setAttribute('aria-hidden', 'true');
+          textEl.appendChild(spinner);
+        } else if (state === BTN_STATE.SUCCESS) {
+          btn.classList.add('btn-cta--success');
+          var check = document.createElement('span');
+          check.innerHTML = '<svg class="icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>';
+          textEl.appendChild(check);
+          textEl.appendChild(document.createTextNode(' Caricate!'));
+        } else if (state === BTN_STATE.ERROR) {
+          btn.classList.add('btn-cta--error');
+          textEl.appendChild(document.createTextNode('⚓ Riprova'));
+        } else {
+          textEl.appendChild(document.createTextNode('⚓ Carica Ultime News'));
+        }
+      }
+
+      // ---------- UI: app state ----------
+      function setAppState(state) {
+        appState = state;
+        dom.stateIdle.classList.toggle('u-hidden', state !== APP_STATE.IDLE);
+        dom.stateLoading.classList.toggle('u-hidden', state !== APP_STATE.LOADING);
+        dom.stateSuccess.classList.toggle('u-hidden', state !== APP_STATE.SUCCESS);
+        dom.stateError.classList.toggle('u-hidden', state !== APP_STATE.ERROR);
+        dom.stateNoResults.classList.toggle('u-hidden', state !== APP_STATE.NO_RESULTS);
+        dom.sectionTitle.classList.toggle('u-hidden', state !== APP_STATE.SUCCESS && state !== APP_STATE.NO_RESULTS);
+      }
+
+      // ---------- Skeleton grid (12 cards) ----------
+      function renderSkeletons() {
+        var grid = document.getElementById('stateLoadingGrid');
+        grid.innerHTML = '';
+        for (var i = 0; i < 12; i++) {
+          var card = document.createElement('div');
+          card.className = 'skeleton-card';
+          card.setAttribute('aria-hidden', 'true');
+          card.innerHTML =
+            '<div class="skeleton-card__thumb"></div>' +
+            '<div class="skeleton-card__body">' +
+            '<div class="skeleton-card__line skeleton-card__line--short"></div>' +
+            '<div class="skeleton-card__line skeleton-card__line--long"></div>' +
+            '<div class="skeleton-card__line skeleton-card__line--medium"></div>' +
+            '<div class="skeleton-card__line skeleton-card__line--long"></div>' +
+            '</div>';
+          grid.appendChild(card);
+        }
+      }
+
+      // ---------- Render news cards ----------
+      function renderNewsCards(newsList) {
+        var grid = dom.stateSuccess;
+        grid.innerHTML = '';
+        newsList.forEach(function (item, index) {
+          var card = document.createElement('a');
+          card.href = item.sourceUrl || '#';
+          card.target = '_blank';
+          card.rel = 'noopener noreferrer';
+          card.className = 'news-card';
+          card.setAttribute('role', 'listitem');
+          card.style.animationDelay = index * 50 + 'ms';
+
+          var title = truncate(item.title, 80);
+          var excerpt = truncate(item.excerpt, 150);
+          var category = item.category || 'News';
+
+          var thumb = item.imageUrl
+            ? '<img class="news-card__thumb" src="' + escapeHtml(item.imageUrl) + '" alt="" loading="lazy">'
+            : '<div class="news-card__thumb-placeholder" aria-hidden="true">⛵</div>';
+
+          card.innerHTML =
+            '<div class="news-card__thumb-wrap">' + thumb + '</div>' +
+            '<div class="news-card__body">' +
+            '<span class="news-card__badge">' + escapeHtml(category) + '</span>' +
+            '<h3 class="news-card__title">' + escapeHtml(title) + '</h3>' +
+            '<p class="news-card__meta">' + escapeHtml(item.source) + ' · ' + getRelativeTime(item.publishedAt) + '</p>' +
+            '<p class="news-card__excerpt">' + escapeHtml(excerpt) + '</p>' +
+            '</div>';
+
+          grid.appendChild(card);
+        });
+      }
+
+      function escapeHtml(s) {
+        if (!s) return '';
+        var div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      // ---------- Toast ----------
+      function showToast(message, type, durationMs) {
+        durationMs = durationMs || 3000;
+        var toast = document.createElement('div');
+        toast.className = 'toast toast--' + type;
+        toast.setAttribute('role', 'status');
+        toast.textContent = message;
+        dom.toastContainer.appendChild(toast);
+
+        setTimeout(function () {
+          toast.classList.add('toast--out');
+          setTimeout(function () {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+          }, 300);
+        }, durationMs);
+      }
+
+      // ---------- Last update text ----------
+      function updateLastUpdateLabel() {
+        if (!lastUpdateTime) return;
+        var d = new Date(lastUpdateTime);
+        var h = d.getHours();
+        var m = d.getMinutes();
+        var timeStr = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+        dom.lastUpdate.textContent = 'Ultimo aggiornamento: ' + timeStr;
+        dom.lastUpdate.classList.remove('u-hidden');
+        dom.microcopy.classList.add('u-hidden');
+      }
+
+      // ---------- Load flow ----------
+      function onLoadClick() {
+        if (btnState === BTN_STATE.LOADING) return;
+
+        setButtonState(BTN_STATE.LOADING);
+        setAppState(APP_STATE.LOADING);
+        renderSkeletons();
+
+        fetchNews()
+          .then(function (data) {
+            var news = data.news || [];
+            lastUpdateTime = data.timestamp ? new Date(data.timestamp).getTime() : Date.now();
+
+            if (news.length === 0) {
+              setAppState(APP_STATE.NO_RESULTS);
+              setButtonState(BTN_STATE.DEFAULT);
+              return;
+            }
+
+            renderNewsCards(news);
+            setAppState(APP_STATE.SUCCESS);
+            updateLastUpdateLabel();
+            showToast('✓ News caricate con successo!', 'success', 3000);
+
+            setButtonState(BTN_STATE.SUCCESS);
+            setTimeout(function () {
+              setButtonState(BTN_STATE.DEFAULT);
+            }, 2000);
+          })
+          .catch(function (err) {
+            setAppState(APP_STATE.ERROR);
+            setButtonState(BTN_STATE.ERROR);
+            showToast('⚠ ' + (err && err.message ? err.message : 'Errore di caricamento. Riprova.'), 'error', 4000);
+          });
+      }
+
+      // ---------- Init ----------
+      dom.btnLoadNews.addEventListener('click', onLoadClick);
+    })();
+  </script>
+</body>
+</html>
