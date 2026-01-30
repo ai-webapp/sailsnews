@@ -425,6 +425,183 @@
       color: var(--color-text-muted);
       margin-top: 4px;
     }
+
+    /* ========== SEARCH SECTION (spunti post Facebook) – Accordion ========== */
+    .search-section {
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .search-section__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 20px 24px;
+      font-family: var(--font);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-text);
+      text-align: left;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .search-section__header:hover {
+      background: rgba(13, 92, 140, 0.04);
+    }
+    .search-section__header:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: -2px;
+    }
+    .search-section__header-icon {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      margin-left: 12px;
+      color: var(--color-primary);
+      transition: transform 0.3s ease;
+    }
+    .search-section--open .search-section__header-icon {
+      transform: rotate(180deg);
+    }
+    .search-section__panel {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.35s ease;
+    }
+    .search-section--open .search-section__panel {
+      grid-template-rows: 1fr;
+    }
+    .search-section__panel-inner {
+      overflow: hidden;
+    }
+    .search-section__panel-content {
+      padding: 0 24px 24px;
+    }
+    .search-section__sub {
+      font-size: 0.9375rem;
+      color: var(--color-text-muted);
+      margin-bottom: 20px;
+    }
+    .search-form {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 600px) {
+      .search-form {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 900px) {
+      .search-form {
+        grid-template-columns: auto auto auto 1fr auto auto;
+        align-items: end;
+      }
+    }
+    .search-form__group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .search-form__group--date {
+      min-width: 160px;
+      width: 100%;
+    }
+    @media (min-width: 600px) {
+      .search-form__group--date {
+        width: 180px;
+        min-width: 180px;
+      }
+    }
+    .search-form__group--full {
+      grid-column: 1 / -1;
+    }
+    .search-form label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+    .search-form input,
+    .search-form select {
+      font-family: var(--font);
+      font-size: 0.9375rem;
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+    .search-form input:focus,
+    .search-form select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px rgba(26, 159, 212, 0.2);
+    }
+    .search-form input:disabled,
+    .search-form select:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .search-form__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn-search {
+      padding: 10px 20px;
+      font-family: var(--font);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #fff;
+      background: var(--color-primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .btn-search:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      transform: scale(1.02);
+    }
+    .btn-search:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    .btn-search:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-reset {
+      padding: 10px 16px;
+      font-family: var(--font);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-primary);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .btn-reset:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      background: rgba(13, 92, 140, 0.06);
+    }
+    .search-results-count {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    .search-section--disabled .search-form input,
+    .search-section--disabled .search-form select,
+    .search-section--disabled .btn-search {
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -448,6 +625,51 @@
       <p class="hero__microcopy" id="microcopy">Aggiornato pochi secondi fa • Fonti verificate</p>
       <p class="last-update u-hidden" id="lastUpdate" aria-live="polite"></p>
     </header>
+
+    <!-- Ricerca spunti per post Facebook (accordion) -->
+    <section class="search-section search-section--disabled search-section--open" id="searchSection" aria-label="Ricerca spunti per post Facebook">
+      <button type="button" class="search-section__header" id="searchAccordionBtn" aria-expanded="true" aria-controls="searchAccordionPanel">
+        <span>Trova spunti per i tuoi post Facebook</span>
+        <svg class="search-section__header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <div class="search-section__panel" id="searchAccordionPanel" role="region">
+        <div class="search-section__panel-inner">
+          <div class="search-section__panel-content">
+            <p class="search-section__sub">Filtra le news per data, titolo e argomento per trovare ispirazione per la comunicazione.</p>
+            <form class="search-form" id="searchForm" role="search" novalidate>
+        <div class="search-form__group search-form__group--date">
+          <label for="filterDateFrom">Data da</label>
+          <input type="date" id="filterDateFrom" name="dateFrom" aria-label="Data da">
+        </div>
+        <div class="search-form__group search-form__group--date">
+          <label for="filterDateTo">Data a</label>
+          <input type="date" id="filterDateTo" name="dateTo" aria-label="Data a">
+        </div>
+        <div class="search-form__group search-form__group--full">
+          <label for="filterTitle">Titolo</label>
+          <input type="search" id="filterTitle" name="title" placeholder="Cerca nel titolo..." aria-label="Cerca nel titolo" autocomplete="off">
+        </div>
+        <div class="search-form__group">
+          <label for="filterCategory">Argomento</label>
+          <select id="filterCategory" name="category" aria-label="Argomento">
+            <option value="">Tutti</option>
+            <option value="Regata">Regata</option>
+            <option value="Tecnologia">Tecnologia</option>
+            <option value="Team News">Team News</option>
+          </select>
+        </div>
+        <div class="search-form__actions">
+          <button type="submit" class="btn-search" id="btnSearch" disabled aria-label="Cerca">Cerca</button>
+          <button type="button" class="btn-reset" id="btnResetSearch" disabled aria-label="Resetta filtri">Resetta filtri</button>
+          <span class="search-results-count u-hidden" id="searchResultsCount" aria-live="polite"></span>
+        </div>
+      </form>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- News section -->
     <section class="news-section" aria-label="Elenco news">
@@ -479,8 +701,8 @@
       <!-- NO_RESULTS -->
       <div class="state-message u-hidden" id="stateNoResults" role="status">
         <div class="state-message__icon" aria-hidden="true">🌊</div>
-        <p class="state-message__title">Bonaccia totale.</p>
-        <p class="state-message__text">Nessuna nuova notizia al momento. Prova a refreshare tra qualche minuto.</p>
+        <p class="state-message__title" id="stateNoResultsTitle">Bonaccia totale.</p>
+        <p class="state-message__text" id="stateNoResultsText">Nessuna nuova notizia al momento. Prova a refreshare tra qualche minuto.</p>
       </div>
     </section>
   </div>
@@ -498,6 +720,7 @@
       let appState = APP_STATE.IDLE;
       let btnState = BTN_STATE.DEFAULT;
       let lastUpdateTime = null;
+      var allNews = [];
 
       const dom = {
         btnLoadNews: document.getElementById('btnLoadNews'),
@@ -510,7 +733,19 @@
         stateSuccess: document.getElementById('stateSuccess'),
         stateError: document.getElementById('stateError'),
         stateNoResults: document.getElementById('stateNoResults'),
+        stateNoResultsTitle: document.getElementById('stateNoResultsTitle'),
+        stateNoResultsText: document.getElementById('stateNoResultsText'),
         toastContainer: document.getElementById('toastContainer'),
+        searchSection: document.getElementById('searchSection'),
+        searchAccordionBtn: document.getElementById('searchAccordionBtn'),
+        searchForm: document.getElementById('searchForm'),
+        filterDateFrom: document.getElementById('filterDateFrom'),
+        filterDateTo: document.getElementById('filterDateTo'),
+        filterTitle: document.getElementById('filterTitle'),
+        filterCategory: document.getElementById('filterCategory'),
+        btnSearch: document.getElementById('btnSearch'),
+        btnResetSearch: document.getElementById('btnResetSearch'),
+        searchResultsCount: document.getElementById('searchResultsCount'),
       };
 
       // ---------- Mock API (simula risposta n8n) ----------
@@ -685,6 +920,73 @@
         return str.length <= maxLen ? str : str.slice(0, maxLen).trim() + '...';
       }
 
+      // ---------- Ricerca / filtri (spunti post Facebook) ----------
+      function getFilterValues() {
+        var dateFrom = dom.filterDateFrom.value;
+        var dateTo = dom.filterDateTo.value;
+        var title = (dom.filterTitle.value || '').trim().toLowerCase();
+        var category = (dom.filterCategory.value || '').trim();
+        return { dateFrom: dateFrom, dateTo: dateTo, title: title, category: category };
+      }
+
+      function filterNews(list) {
+        var f = getFilterValues();
+        return list.filter(function (item) {
+          var pub = new Date(item.publishedAt).getTime();
+          if (f.dateFrom) {
+            var start = new Date(f.dateFrom).setHours(0, 0, 0, 0);
+            if (pub < start) return false;
+          }
+          if (f.dateTo) {
+            var end = new Date(f.dateTo).setHours(23, 59, 59, 999);
+            if (pub > end) return false;
+          }
+          if (f.title) {
+            var titleLower = (item.title || '').toLowerCase();
+            var words = f.title.split(/\s+/).filter(Boolean);
+            for (var w = 0; w < words.length; w++) {
+              if (titleLower.indexOf(words[w]) === -1) return false;
+            }
+          }
+          if (f.category && (item.category || '') !== f.category) return false;
+          return true;
+        });
+      }
+
+      function updateSearchResultsCount(count) {
+        var el = dom.searchResultsCount;
+        el.classList.remove('u-hidden');
+        el.textContent = count === 0 ? 'Nessun risultato' : count === 1 ? '1 risultato' : count + ' risultati';
+      }
+
+      function enableSearchSection() {
+        dom.searchSection.classList.remove('search-section--disabled');
+        dom.btnSearch.disabled = false;
+        dom.btnResetSearch.disabled = false;
+      }
+
+      function applyFilters() {
+        if (allNews.length === 0) return;
+        var filtered = filterNews(allNews);
+        updateSearchResultsCount(filtered.length);
+        if (filtered.length === 0) {
+          dom.stateNoResultsTitle.textContent = 'Nessun risultato per questi filtri';
+          dom.stateNoResultsText.textContent = 'Prova a modificare data, titolo o argomento.';
+          setAppState(APP_STATE.NO_RESULTS);
+        } else {
+          setAppState(APP_STATE.SUCCESS);
+          renderNewsCards(filtered);
+        }
+      }
+
+      function resetSearchFilters() {
+        dom.filterDateFrom.value = '';
+        dom.filterDateTo.value = '';
+        dom.filterTitle.value = '';
+        dom.filterCategory.value = '';
+        applyFilters();
+      }
+
       // ---------- Fetch news (mock o API reale) ----------
       function fetchNews() {
         // Per integrazione n8n: sostituire con fetch('URL_WEBHOOK_N8N')
@@ -843,14 +1145,19 @@
             lastUpdateTime = data.timestamp ? new Date(data.timestamp).getTime() : Date.now();
 
             if (news.length === 0) {
+              dom.stateNoResultsTitle.textContent = 'Bonaccia totale.';
+              dom.stateNoResultsText.textContent = 'Nessuna nuova notizia al momento. Prova a refreshare tra qualche minuto.';
               setAppState(APP_STATE.NO_RESULTS);
               setButtonState(BTN_STATE.DEFAULT);
               return;
             }
 
+            allNews = news;
+            enableSearchSection();
             renderNewsCards(news);
             setAppState(APP_STATE.SUCCESS);
             updateLastUpdateLabel();
+            updateSearchResultsCount(news.length);
             showToast('✓ News caricate con successo!', 'success', 3000);
 
             setButtonState(BTN_STATE.SUCCESS);
@@ -867,6 +1174,17 @@
 
       // ---------- Init ----------
       dom.btnLoadNews.addEventListener('click', onLoadClick);
+      dom.searchForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        applyFilters();
+      });
+      dom.btnResetSearch.addEventListener('click', resetSearchFilters);
+
+      // Accordion: mostra/nascondi filtri
+      dom.searchAccordionBtn.addEventListener('click', function () {
+        var open = dom.searchSection.classList.toggle('search-section--open');
+        dom.searchAccordionBtn.setAttribute('aria-expanded', open);
+      });
     })();
   </script>
 </body>
