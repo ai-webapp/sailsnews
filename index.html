@@ -597,8 +597,27 @@
       font-size: 0.875rem;
       color: var(--color-text-muted);
     }
-    .search-section--disabled .search-form input,
-    .search-section--disabled .search-form select,
+    .search-form__date-warning {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      color: var(--color-warning);
+      margin-top: 4px;
+      padding: 8px 12px;
+      background: rgba(217, 119, 6, 0.08);
+      border-radius: 8px;
+      border: 1px solid rgba(217, 119, 6, 0.25);
+    }
+    .search-form__date-warning.u-hidden {
+      display: none !important;
+    }
+    .search-form__date-warning svg {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+    }
+    /* Solo il pulsante Cerca è disabilitato prima del caricamento news; input date/titolo/argomento restano cliccabili */
     .search-section--disabled .btn-search {
       pointer-events: none;
     }
@@ -645,7 +664,13 @@
         </div>
         <div class="search-form__group search-form__group--date">
           <label for="filterDateTo">Data a</label>
-          <input type="date" id="filterDateTo" name="dateTo" aria-label="Data a">
+          <input type="date" id="filterDateTo" name="dateTo" aria-label="Data a" aria-describedby="searchDateWarning">
+        </div>
+        <div class="search-form__group search-form__group--full u-hidden" id="searchDateWarning" role="alert">
+          <span class="search-form__date-warning" id="searchDateWarningText">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/><path d="M12 16h.01"/></svg>
+            La data "a" non può essere antecedente alla data "da". Correggi l’intervallo.
+          </span>
         </div>
         <div class="search-form__group search-form__group--full">
           <label for="filterTitle">Titolo</label>
@@ -741,6 +766,7 @@
         searchForm: document.getElementById('searchForm'),
         filterDateFrom: document.getElementById('filterDateFrom'),
         filterDateTo: document.getElementById('filterDateTo'),
+        searchDateWarning: document.getElementById('searchDateWarning'),
         filterTitle: document.getElementById('filterTitle'),
         filterCategory: document.getElementById('filterCategory'),
         btnSearch: document.getElementById('btnSearch'),
@@ -921,6 +947,24 @@
       }
 
       // ---------- Ricerca / filtri (spunti post Facebook) ----------
+      function isDateRangeInvalid() {
+        var dateFrom = dom.filterDateFrom.value;
+        var dateTo = dom.filterDateTo.value;
+        if (!dateFrom || !dateTo) return false;
+        return new Date(dateTo) < new Date(dateFrom);
+      }
+
+      function updateDateWarning() {
+        var invalid = isDateRangeInvalid();
+        if (invalid) {
+          dom.searchDateWarning.classList.remove('u-hidden');
+          dom.filterDateTo.setAttribute('aria-invalid', 'true');
+        } else {
+          dom.searchDateWarning.classList.add('u-hidden');
+          dom.filterDateTo.removeAttribute('aria-invalid');
+        }
+      }
+
       function getFilterValues() {
         var dateFrom = dom.filterDateFrom.value;
         var dateTo = dom.filterDateTo.value;
@@ -967,6 +1011,12 @@
 
       function applyFilters() {
         if (allNews.length === 0) return;
+        if (isDateRangeInvalid()) {
+          updateDateWarning();
+          showToast('La data "a" non può essere antecedente alla data "da".', 'error', 4000);
+          return;
+        }
+        updateDateWarning();
         var filtered = filterNews(allNews);
         updateSearchResultsCount(filtered.length);
         if (filtered.length === 0) {
@@ -984,6 +1034,7 @@
         dom.filterDateTo.value = '';
         dom.filterTitle.value = '';
         dom.filterCategory.value = '';
+        updateDateWarning();
         applyFilters();
       }
 
@@ -1179,6 +1230,10 @@
         applyFilters();
       });
       dom.btnResetSearch.addEventListener('click', resetSearchFilters);
+      dom.filterDateFrom.addEventListener('input', updateDateWarning);
+      dom.filterDateFrom.addEventListener('change', updateDateWarning);
+      dom.filterDateTo.addEventListener('input', updateDateWarning);
+      dom.filterDateTo.addEventListener('change', updateDateWarning);
 
       // Accordion: mostra/nascondi filtri
       dom.searchAccordionBtn.addEventListener('click', function () {
