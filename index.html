@@ -1038,15 +1038,64 @@
         applyFilters();
       }
 
-      // ---------- Fetch news (mock o API reale) ----------
+      // ---------- Fetch news da n8n (automazione "News AI") – webhook produzione GET ----------
+      // Il webhook deve restituire JSON con { news: [ { id, title, source, sourceUrl, publishedAt, excerpt, imageUrl?, category? } ] }
+      var N8N_NEWS_URL = 'https://primary-production-ab119.up.railway.app/webhook/ff817b1c-1593-4d95-b69a-1841f56745ee';
+      var FETCH_TIMEOUT_MS = 20000;
+
       function fetchNews() {
-        // Per integrazione n8n: sostituire con fetch('URL_WEBHOOK_N8N')
-        return new Promise(function (resolve, reject) {
-          setTimeout(function () {
-            resolve(getMockResponse());
-            // Per test errore: reject(new Error('Network error'));
-          }, 1200);
-        });
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function () {
+          controller.abort();
+        }, FETCH_TIMEOUT_MS);
+
+        return fetch(N8N_NEWS_URL, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: { Accept: 'application/json' }
+        })
+          .then(function (res) {
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+              throw new Error('Risposta non valida: ' + res.status + ' ' + res.statusText);
+            }
+            return res.json();
+          })
+          .then(function (body) {
+            var raw = body.news || (body.data && body.data.news) || (body.data && Array.isArray(body.data) ? body.data : null) || (Array.isArray(body) ? body : (body.items || []));
+            var list = Array.isArray(raw) ? raw : [];
+            var timestamp = body.timestamp || (body.data && body.data.timestamp);
+            var normalized = list.map(function (item, i) {
+              var rawContent = item.excerpt || item.description || item.summary || item.content || '';
+              var imageUrl = item.imageUrl || item.image || item.thumbnail || (item.enclosure && item.enclosure.url) || '';
+              if (!imageUrl && rawContent) {
+                imageUrl = getFirstImageUrlFromHtml(rawContent);
+              }
+              return {
+                id: item.id || item.guid || 'n8n-' + i + '-' + (Date.now()),
+                title: item.title || item.headline || '',
+                source: item.source || item.feed || item.author || 'Fonte',
+                sourceUrl: item.sourceUrl || item.url || item.link || '#',
+                publishedAt: item.publishedAt || item.created || item.pubDate || item.date || item.isoDate || new Date().toISOString(),
+                excerpt: rawContent,
+                imageUrl: imageUrl,
+                category: item.category || item.tag || item.section || 'News'
+              };
+            });
+            return {
+              status: body.status || 'success',
+              timestamp: timestamp || new Date().toISOString(),
+              count: normalized.length,
+              news: normalized
+            };
+          })
+          .catch(function (err) {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+              throw new Error('Timeout: il server non ha risposto in tempo.');
+            }
+            throw err;
+          });
       }
 
       // ---------- UI: button state ----------
@@ -1126,7 +1175,7 @@
           card.style.animationDelay = index * 50 + 'ms';
 
           var title = truncate(item.title, 80);
-          var excerpt = truncate(item.excerpt, 150);
+          var excerpt = truncate(stripHtml(item.excerpt || ''), 150);
           var category = item.category || 'News';
 
           var thumb = item.imageUrl
@@ -1151,6 +1200,21 @@
         var div = document.createElement('div');
         div.textContent = s;
         return div.innerHTML;
+      }
+
+      /** Rimuove tag HTML dall’estratto (es. content RSS con <p>, <img>, <b>) e restituisce solo testo. */
+      function stripHtml(html) {
+        if (!html) return '';
+        var div = document.createElement('div');
+        div.innerHTML = String(html);
+        return (div.textContent || div.innerText || '').trim().replace(/\s+/g, ' ');
+      }
+
+      /** Estrae il primo src da un tag <img> nel testo HTML (per thumbnail da content RSS). */
+      function getFirstImageUrlFromHtml(html) {
+        if (!html) return '';
+        var match = String(html).match(/<img[^>]+src\s*=\s*["']([^"']+)["']/i);
+        return match ? match[1] : '';
       }
 
       // ---------- Toast ----------
