@@ -147,6 +147,45 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
+    /* ========== PAGINATION ========== */
+    .pagination {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 24px;
+      padding: 16px 0;
+    }
+    .pagination__info {
+      font-size: 0.9375rem;
+      color: var(--color-text-muted);
+    }
+    .pagination__btn {
+      padding: 8px 16px;
+      font-family: var(--font);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .pagination__btn:hover:not(:disabled) {
+      background: rgba(13, 92, 140, 0.06);
+      border-color: var(--color-primary);
+    }
+    .pagination__btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .pagination__btn:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
     /* ========== NEWS SECTION ========== */
     .news-section {
       margin-top: 16px;
@@ -262,6 +301,10 @@
       font-size: 0.8125rem;
       color: var(--color-text-muted);
       margin-bottom: 8px;
+    }
+    .news-card__source {
+      font-weight: 600;
+      color: var(--color-text);
     }
     .news-card__excerpt {
       font-size: 0.875rem;
@@ -521,6 +564,20 @@
     .search-form__group--full {
       grid-column: 1 / -1;
     }
+    .search-form__row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 600px) {
+      .search-form__row--title-source {
+        grid-template-columns: 1fr 200px;
+      }
+    }
+    .search-form__group--source {
+      min-width: 0;
+    }
     .search-form label {
       font-size: 0.8125rem;
       font-weight: 600;
@@ -672,17 +729,24 @@
             La data "a" non può essere antecedente alla data "da". Correggi l’intervallo.
           </span>
         </div>
-        <div class="search-form__group search-form__group--full">
-          <label for="filterTitle">Titolo</label>
-          <input type="search" id="filterTitle" name="title" placeholder="Cerca nel titolo..." aria-label="Cerca nel titolo" autocomplete="off">
+        <div class="search-form__row search-form__row--title-source">
+          <div class="search-form__group">
+            <label for="filterTitle">Titolo</label>
+            <input type="search" id="filterTitle" name="title" placeholder="Cerca nel titolo..." aria-label="Cerca nel titolo" autocomplete="off">
+          </div>
+          <div class="search-form__group search-form__group--source">
+            <label for="filterSource">Fonte</label>
+            <select id="filterSource" name="source" aria-label="Fonte">
+              <option value="">Tutti</option>
+              <!-- Opzioni Fonte popolate da JS -->
+            </select>
+          </div>
         </div>
         <div class="search-form__group">
           <label for="filterCategory">Argomento</label>
           <select id="filterCategory" name="category" aria-label="Argomento">
             <option value="">Tutti</option>
-            <option value="Regata">Regata</option>
-            <option value="Tecnologia">Tecnologia</option>
-            <option value="Team News">Team News</option>
+            <!-- Opzioni Argomento popolate da JS in base ai tag delle news caricate -->
           </select>
         </div>
         <div class="search-form__actions">
@@ -713,8 +777,15 @@
         <div class="news-grid" id="stateLoadingGrid"><!-- 12 skeleton cards injected by JS --></div>
       </div>
 
-      <!-- SUCCESS: news grid -->
-      <div class="news-grid u-hidden" id="stateSuccess" role="list"></div>
+      <!-- SUCCESS: news grid + pagination -->
+      <div class="u-hidden" id="stateSuccessWrap">
+        <div class="news-grid" id="stateSuccess" role="list"></div>
+        <nav class="pagination u-hidden" id="paginationWrap" aria-label="Paginazione articoli">
+          <span class="pagination__info" id="paginationInfo">Pagina 1 di 1</span>
+          <button type="button" class="pagination__btn" id="paginationPrev" aria-label="Pagina precedente">Precedente</button>
+          <button type="button" class="pagination__btn" id="paginationNext" aria-label="Pagina successiva">Successiva</button>
+        </nav>
+      </div>
 
       <!-- ERROR: message -->
       <div class="state-message u-hidden" id="stateError" role="alert">
@@ -746,6 +817,9 @@
       let btnState = BTN_STATE.DEFAULT;
       let lastUpdateTime = null;
       var allNews = [];
+      var ITEMS_PER_PAGE = 12;
+      var currentPage = 1;
+      var currentDisplayList = [];
 
       const dom = {
         btnLoadNews: document.getElementById('btnLoadNews'),
@@ -755,6 +829,7 @@
         sectionTitle: document.getElementById('sectionTitle'),
         stateIdle: document.getElementById('stateIdle'),
         stateLoading: document.getElementById('stateLoading'),
+        stateSuccessWrap: document.getElementById('stateSuccessWrap'),
         stateSuccess: document.getElementById('stateSuccess'),
         stateError: document.getElementById('stateError'),
         stateNoResults: document.getElementById('stateNoResults'),
@@ -767,7 +842,12 @@
         filterDateFrom: document.getElementById('filterDateFrom'),
         filterDateTo: document.getElementById('filterDateTo'),
         searchDateWarning: document.getElementById('searchDateWarning'),
+        paginationWrap: document.getElementById('paginationWrap'),
+        paginationInfo: document.getElementById('paginationInfo'),
+        paginationPrev: document.getElementById('paginationPrev'),
+        paginationNext: document.getElementById('paginationNext'),
         filterTitle: document.getElementById('filterTitle'),
+        filterSource: document.getElementById('filterSource'),
         filterCategory: document.getElementById('filterCategory'),
         btnSearch: document.getElementById('btnSearch'),
         btnResetSearch: document.getElementById('btnResetSearch'),
@@ -969,8 +1049,9 @@
         var dateFrom = dom.filterDateFrom.value;
         var dateTo = dom.filterDateTo.value;
         var title = (dom.filterTitle.value || '').trim().toLowerCase();
+        var source = (dom.filterSource.value || '').trim();
         var category = (dom.filterCategory.value || '').trim();
-        return { dateFrom: dateFrom, dateTo: dateTo, title: title, category: category };
+        return { dateFrom: dateFrom, dateTo: dateTo, title: title, source: source, category: category };
       }
 
       function filterNews(list) {
@@ -992,6 +1073,7 @@
               if (titleLower.indexOf(words[w]) === -1) return false;
             }
           }
+          if (f.source && (item.source || '') !== f.source) return false;
           if (f.category && (item.category || '') !== f.category) return false;
           return true;
         });
@@ -1007,6 +1089,62 @@
         dom.searchSection.classList.remove('search-section--disabled');
         dom.btnSearch.disabled = false;
         dom.btnResetSearch.disabled = false;
+      }
+
+      /** Allinea il dropdown Fonte (source name) alle fonti delle news caricate. */
+      function populateSourceDropdown(newsList) {
+        var select = dom.filterSource;
+        var currentValue = select.value;
+        var sources = [];
+        var seen = {};
+        (newsList || []).forEach(function (item) {
+          var s = (item.source || '').trim() || 'sourceName';
+          if (!seen[s]) {
+            seen[s] = true;
+            sources.push(s);
+          }
+        });
+        sources.sort(function (a, b) { return a.localeCompare(b); });
+        select.innerHTML = '<option value="">Tutti</option>';
+        sources.forEach(function (s) {
+          var opt = document.createElement('option');
+          opt.value = s;
+          opt.textContent = s;
+          select.appendChild(opt);
+        });
+        if (currentValue && sources.indexOf(currentValue) !== -1) {
+          select.value = currentValue;
+        } else {
+          select.value = '';
+        }
+      }
+
+      /** Allinea il dropdown Argomento ai tag/categoria delle news caricate e lo usa come filtro. */
+      function populateCategoryDropdown(newsList) {
+        var select = dom.filterCategory;
+        var currentValue = select.value;
+        var categories = [];
+        var seen = {};
+        (newsList || []).forEach(function (item) {
+          var cat = (item.category || '').trim() || 'News';
+          if (!seen[cat]) {
+            seen[cat] = true;
+            categories.push(cat);
+          }
+        });
+        categories.sort(function (a, b) { return a.localeCompare(b); });
+        select.innerHTML = '<option value="">Tutti</option>';
+        categories.forEach(function (cat) {
+          var opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          select.appendChild(opt);
+        });
+        if (currentValue && categories.indexOf(currentValue) !== -1) {
+          select.value = currentValue;
+        } else {
+          select.value = '';
+        }
       }
 
       function applyFilters() {
@@ -1025,7 +1163,7 @@
           setAppState(APP_STATE.NO_RESULTS);
         } else {
           setAppState(APP_STATE.SUCCESS);
-          renderNewsCards(filtered);
+          renderNewsCards(filtered, 1);
         }
       }
 
@@ -1033,14 +1171,16 @@
         dom.filterDateFrom.value = '';
         dom.filterDateTo.value = '';
         dom.filterTitle.value = '';
+        dom.filterSource.value = '';
         dom.filterCategory.value = '';
         updateDateWarning();
         applyFilters();
       }
 
-      // ---------- Fetch news da n8n (automazione "News AI") – webhook produzione GET ----------
+      // ---------- Fetch news da n8n (webhook GET "app rss feed fb organico") – tempo reale ----------
       // Il webhook deve restituire JSON con { news: [ { id, title, source, sourceUrl, publishedAt, excerpt, imageUrl?, category? } ] }
-      var N8N_NEWS_URL = 'https://primary-production-ab119.up.railway.app/webhook/ff817b1c-1593-4d95-b69a-1841f56745ee';
+      var N8N_NEWS_URL = 'https://aiwebapp.space/webhook/c721ec09-2aac-4540-83b8-478a191a3d56';
+      var N8N_REQUEST_METHOD = 'GET';
       var FETCH_TIMEOUT_MS = 20000;
 
       function fetchNews() {
@@ -1049,32 +1189,81 @@
           controller.abort();
         }, FETCH_TIMEOUT_MS);
 
-        return fetch(N8N_NEWS_URL, {
-          method: 'GET',
+        var headers = { Accept: 'application/json' };
+        if (N8N_REQUEST_METHOD === 'POST') {
+          headers['Content-Type'] = 'application/json';
+        }
+        var fetchOpts = {
+          method: N8N_REQUEST_METHOD,
           signal: controller.signal,
-          headers: { Accept: 'application/json' }
-        })
+          headers: headers
+        };
+        if (N8N_REQUEST_METHOD === 'POST') {
+          fetchOpts.body = JSON.stringify({});
+        }
+
+        return fetch(N8N_NEWS_URL, fetchOpts)
           .then(function (res) {
             clearTimeout(timeoutId);
-            if (!res.ok) {
-              throw new Error('Risposta non valida: ' + res.status + ' ' + res.statusText);
-            }
-            return res.json();
+            return res.text().then(function (text) {
+              if (!res.ok) {
+                var msg = res.status === 500
+                  ? 'Errore 500: il workflow n8n è andato in errore. Controlla le esecuzioni in n8n (log e nodo fallito).'
+                  : (res.status === 502 || res.status === 503)
+                    ? 'Server temporaneamente non disponibile. Riprova tra poco.'
+                    : 'Risposta non valida: ' + res.status + ' ' + res.statusText;
+                console.error('[SailNews]', msg, 'Body:', text.slice(0, 500));
+                throw new Error(msg);
+              }
+              var contentType = res.headers.get('content-type') || '';
+              if (contentType.indexOf('application/json') !== -1 || (text.trim().startsWith('{') || text.trim().startsWith('['))) {
+                try {
+                  return JSON.parse(text);
+                } catch (e) {
+                  console.error('[SailNews] Risposta non è JSON valido. Prime 500 caratteri:', text.slice(0, 500));
+                  throw new Error('La risposta del webhook non è JSON valido. Controlla che n8n risponda con JSON.');
+                }
+              }
+              console.error('[SailNews] Risposta non JSON. Ricevuto:', text.slice(0, 300));
+              throw new Error('Il webhook non ha restituito JSON. Risposta: ' + (text.slice(0, 80) || res.status));
+            });
           })
           .then(function (body) {
-            var raw = body.news || (body.data && body.data.news) || (body.data && Array.isArray(body.data) ? body.data : null) || (Array.isArray(body) ? body : (body.items || []));
+            var payload = body;
+            if (Array.isArray(body) && body.length > 0 && body[0] && body[0].news) {
+              payload = body[0];
+            }
+            if (payload && payload.content && Array.isArray(payload.content) && payload.content[0] && payload.content[0].text) {
+              try {
+                payload = JSON.parse(payload.content[0].text);
+              } catch (e) { /* ignora se non è JSON */ }
+            }
+            if (payload && payload.result) {
+              payload = payload.result;
+            }
+            console.log('[SailNews] Ultimo payload da n8n:', JSON.stringify(body, null, 2));
+            var raw = payload.news || (payload.data && payload.data.news) || (payload.data && Array.isArray(payload.data) ? payload.data : null) || (Array.isArray(payload) ? payload : (payload.items || []));
             var list = Array.isArray(raw) ? raw : [];
-            var timestamp = body.timestamp || (body.data && body.data.timestamp);
+            if (list.length === 0 && payload && typeof payload === 'object' && !Array.isArray(payload) && (payload.title || payload.headline) && (payload.url || payload.sourceUrl || payload.link)) {
+              list = [payload];
+              console.warn('[SailNews] Risposta con un solo articolo (non array news). Per vedere tutti e 3, in n8n aggrega gli item prima del Respond to Webhook.');
+            }
+            console.log('[SailNews] news estratti:', list.length, 'item');
+            if (list.length === 0) {
+              console.warn('[SailNews] Nessun articolo nel payload. Chiavi del payload:', payload ? Object.keys(payload) : 'null');
+            }
+            var timestamp = payload.timestamp || (payload.data && payload.data.timestamp);
             var normalized = list.map(function (item, i) {
               var rawContent = item.excerpt || item.description || item.summary || item.content || '';
               var imageUrl = item.imageUrl || item.image || item.thumbnail || (item.enclosure && item.enclosure.url) || '';
               if (!imageUrl && rawContent) {
                 imageUrl = getFirstImageUrlFromHtml(rawContent);
               }
+              var sourceVal = (item.meta && item.meta.title) || (item.source && item.source !== 'sourceName' ? item.source : '') || item.feedTitle || (item.feed && (typeof item.feed === 'string' ? item.feed : item.feed.title)) || item.author || item.source || '';
               return {
                 id: item.id || item.guid || 'n8n-' + i + '-' + (Date.now()),
                 title: item.title || item.headline || '',
-                source: item.source || item.feed || item.author || 'Fonte',
+                source: sourceVal || 'sourceName',
                 sourceUrl: item.sourceUrl || item.url || item.link || '#',
                 publishedAt: item.publishedAt || item.created || item.pubDate || item.date || item.isoDate || new Date().toISOString(),
                 excerpt: rawContent,
@@ -1083,7 +1272,7 @@
               };
             });
             return {
-              status: body.status || 'success',
+              status: payload.status || 'success',
               timestamp: timestamp || new Date().toISOString(),
               count: normalized.length,
               news: normalized
@@ -1135,7 +1324,7 @@
         appState = state;
         dom.stateIdle.classList.toggle('u-hidden', state !== APP_STATE.IDLE);
         dom.stateLoading.classList.toggle('u-hidden', state !== APP_STATE.LOADING);
-        dom.stateSuccess.classList.toggle('u-hidden', state !== APP_STATE.SUCCESS);
+        dom.stateSuccessWrap.classList.toggle('u-hidden', state !== APP_STATE.SUCCESS);
         dom.stateError.classList.toggle('u-hidden', state !== APP_STATE.ERROR);
         dom.stateNoResults.classList.toggle('u-hidden', state !== APP_STATE.NO_RESULTS);
         dom.sectionTitle.classList.toggle('u-hidden', state !== APP_STATE.SUCCESS && state !== APP_STATE.NO_RESULTS);
@@ -1161,11 +1350,38 @@
         }
       }
 
-      // ---------- Render news cards ----------
-      function renderNewsCards(newsList) {
+      // ---------- Pagination (12 box per pagina) ----------
+      function getTotalPages(list) {
+        return list && list.length ? Math.ceil(list.length / ITEMS_PER_PAGE) : 1;
+      }
+
+      function updatePaginationUI(list, page) {
+        var total = list.length;
+        var totalPages = getTotalPages(list);
+        var start = (page - 1) * ITEMS_PER_PAGE + 1;
+        var end = Math.min(page * ITEMS_PER_PAGE, total);
+        dom.paginationInfo.textContent = total > ITEMS_PER_PAGE
+          ? 'Pagina ' + page + ' di ' + totalPages + ' · Articoli ' + start + '-' + end + ' di ' + total
+          : 'Articoli ' + total + ' (tutti in una pagina)';
+        dom.paginationPrev.disabled = page <= 1;
+        dom.paginationNext.disabled = page >= totalPages;
+        dom.paginationWrap.classList.toggle('u-hidden', totalPages <= 1);
+      }
+
+      // ---------- Render news cards (solo la pagina corrente, 12 per pagina) ----------
+      function renderNewsCards(newsList, page) {
+        if (!newsList || !newsList.length) return;
+        page = page || 1;
+        currentDisplayList = newsList;
+        currentPage = page;
+        var totalPages = getTotalPages(newsList);
+        var from = (page - 1) * ITEMS_PER_PAGE;
+        var to = from + ITEMS_PER_PAGE;
+        var slice = newsList.slice(from, to);
+
         var grid = dom.stateSuccess;
         grid.innerHTML = '';
-        newsList.forEach(function (item, index) {
+        slice.forEach(function (item, index) {
           var card = document.createElement('a');
           card.href = item.sourceUrl || '#';
           card.target = '_blank';
@@ -1187,12 +1403,14 @@
             '<div class="news-card__body">' +
             '<span class="news-card__badge">' + escapeHtml(category) + '</span>' +
             '<h3 class="news-card__title">' + escapeHtml(title) + '</h3>' +
-            '<p class="news-card__meta">' + escapeHtml(item.source) + ' · ' + getRelativeTime(item.publishedAt) + '</p>' +
+            '<p class="news-card__meta"><span class="news-card__source">sourceName: ' + escapeHtml(item.source) + '</span> · ' + getRelativeTime(item.publishedAt) + '</p>' +
             '<p class="news-card__excerpt">' + escapeHtml(excerpt) + '</p>' +
             '</div>';
 
           grid.appendChild(card);
         });
+
+        updatePaginationUI(newsList, page);
       }
 
       function escapeHtml(s) {
@@ -1269,7 +1487,9 @@
 
             allNews = news;
             enableSearchSection();
-            renderNewsCards(news);
+            populateSourceDropdown(news);
+            populateCategoryDropdown(news);
+            renderNewsCards(news, 1);
             setAppState(APP_STATE.SUCCESS);
             updateLastUpdateLabel();
             updateSearchResultsCount(news.length);
@@ -1281,6 +1501,7 @@
             }, 2000);
           })
           .catch(function (err) {
+            console.error('[SailNews] Errore caricamento:', err);
             setAppState(APP_STATE.ERROR);
             setButtonState(BTN_STATE.ERROR);
             showToast('⚠ ' + (err && err.message ? err.message : 'Errore di caricamento. Riprova.'), 'error', 4000);
@@ -1303,6 +1524,17 @@
       dom.searchAccordionBtn.addEventListener('click', function () {
         var open = dom.searchSection.classList.toggle('search-section--open');
         dom.searchAccordionBtn.setAttribute('aria-expanded', open);
+      });
+
+      // Paginazione: Precedente / Successiva
+      dom.paginationPrev.addEventListener('click', function () {
+        if (currentPage <= 1) return;
+        renderNewsCards(currentDisplayList, currentPage - 1);
+      });
+      dom.paginationNext.addEventListener('click', function () {
+        var totalPages = getTotalPages(currentDisplayList);
+        if (currentPage >= totalPages) return;
+        renderNewsCards(currentDisplayList, currentPage + 1);
       });
     })();
   </script>
