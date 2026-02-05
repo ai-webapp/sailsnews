@@ -185,6 +185,85 @@
       outline: 2px solid var(--color-accent);
       outline-offset: 2px;
     }
+    .pagination__btn--more {
+      min-width: 220px;
+      padding: 12px 24px;
+      font-size: 0.9375rem;
+      background: var(--color-primary);
+      color: #fff;
+      border-color: var(--color-primary);
+    }
+    .pagination__btn--more:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
+      color: #fff;
+    }
+
+    /* ========== OVERLAY CREATE POST ========== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0.2s ease, opacity 0.2s ease;
+    }
+    .overlay.is-open {
+      visibility: visible;
+      opacity: 1;
+    }
+    .overlay__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 45, 58, 0.5);
+      cursor: pointer;
+    }
+    .overlay__modal {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow: auto;
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+    }
+    .overlay__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .overlay__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+    .overlay__close {
+      padding: 8px;
+      background: none;
+      border: none;
+      border-radius: 8px;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .overlay__close:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+    .overlay__close:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    .overlay__body {
+      padding: 24px;
+    }
 
     /* ========== NEWS SECTION ========== */
     .news-section {
@@ -315,6 +394,34 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
       margin-top: auto;
+    }
+    .news-card__actions {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--color-border);
+    }
+    .news-card__btn-create {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      font-family: var(--font);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      background: rgba(13, 92, 140, 0.08);
+      border: 1px solid var(--color-primary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .news-card__btn-create:hover {
+      background: var(--color-primary);
+      color: #fff;
+    }
+    .news-card__btn-create:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
     }
 
     /* ========== SKELETON CARDS ========== */
@@ -774,17 +881,15 @@
       <!-- LOADING: skeleton grid -->
       <div class="u-hidden" id="stateLoading" role="status" aria-busy="true" aria-label="Caricamento news in corso">
         <p class="state-message--loading-text" id="stateLoadingText">Issando le vele... Caricamento news in corso</p>
-        <div class="news-grid" id="stateLoadingGrid"><!-- 12 skeleton cards injected by JS --></div>
+        <div class="news-grid" id="stateLoadingGrid"><!-- 18 skeleton cards injected by JS --></div>
       </div>
 
       <!-- SUCCESS: news grid + pagination -->
       <div class="u-hidden" id="stateSuccessWrap">
         <div class="news-grid" id="stateSuccess" role="list"></div>
-        <nav class="pagination u-hidden" id="paginationWrap" aria-label="Paginazione articoli">
-          <span class="pagination__info" id="paginationInfo">Pagina 1 di 1</span>
-          <button type="button" class="pagination__btn" id="paginationPrev" aria-label="Pagina precedente">Precedente</button>
-          <button type="button" class="pagination__btn" id="paginationNext" aria-label="Pagina successiva">Successiva</button>
-        </nav>
+        <div class="pagination u-hidden" id="paginationWrap" role="region" aria-label="Continua visualizzazione">
+          <button type="button" class="pagination__btn pagination__btn--more" id="paginationMore" aria-label="Mostra altri articoli">Continua a visualizzare</button>
+        </div>
       </div>
 
       <!-- ERROR: message -->
@@ -805,6 +910,22 @@
 
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
+  <!-- Overlay Create post (form in bianco per ora) -->
+  <div class="overlay" id="createPostOverlay" role="dialog" aria-modal="true" aria-labelledby="createPostOverlayTitle" aria-hidden="true">
+    <div class="overlay__backdrop" id="createPostOverlayBackdrop"></div>
+    <div class="overlay__modal">
+      <div class="overlay__header">
+        <h2 class="overlay__title" id="createPostOverlayTitle">Crea post</h2>
+        <button type="button" class="overlay__close" id="createPostOverlayClose" aria-label="Chiudi">✕</button>
+      </div>
+      <div class="overlay__body">
+        <form class="overlay__form" id="createPostForm">
+          <!-- Form lasciato in bianco, da completare in seguito -->
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       'use strict';
@@ -817,7 +938,7 @@
       let btnState = BTN_STATE.DEFAULT;
       let lastUpdateTime = null;
       var allNews = [];
-      var ITEMS_PER_PAGE = 12;
+      var ITEMS_PER_PAGE = 18;
       var currentPage = 1;
       var currentDisplayList = [];
 
@@ -843,9 +964,11 @@
         filterDateTo: document.getElementById('filterDateTo'),
         searchDateWarning: document.getElementById('searchDateWarning'),
         paginationWrap: document.getElementById('paginationWrap'),
-        paginationInfo: document.getElementById('paginationInfo'),
-        paginationPrev: document.getElementById('paginationPrev'),
-        paginationNext: document.getElementById('paginationNext'),
+        paginationMore: document.getElementById('paginationMore'),
+        createPostOverlay: document.getElementById('createPostOverlay'),
+        createPostOverlayBackdrop: document.getElementById('createPostOverlayBackdrop'),
+        createPostOverlayClose: document.getElementById('createPostOverlayClose'),
+        createPostForm: document.getElementById('createPostForm'),
         filterTitle: document.getElementById('filterTitle'),
         filterSource: document.getElementById('filterSource'),
         filterCategory: document.getElementById('filterCategory'),
@@ -1085,6 +1208,16 @@
         el.textContent = count === 0 ? 'Nessun risultato' : count === 1 ? '1 risultato' : count + ' risultati';
       }
 
+      /** Ordina gli annunci per data/ora di pubblicazione (più recenti prima), mescolando le fonti. */
+      function sortByPublishedAt(list) {
+        if (!list || !list.length) return list;
+        return list.slice().sort(function (a, b) {
+          var tA = new Date(a.publishedAt || 0).getTime();
+          var tB = new Date(b.publishedAt || 0).getTime();
+          return tB - tA;
+        });
+      }
+
       function enableSearchSection() {
         dom.searchSection.classList.remove('search-section--disabled');
         dom.btnSearch.disabled = false;
@@ -1163,7 +1296,7 @@
           setAppState(APP_STATE.NO_RESULTS);
         } else {
           setAppState(APP_STATE.SUCCESS);
-          renderNewsCards(filtered, 1);
+          renderNewsCards(sortByPublishedAt(filtered), 1);
         }
       }
 
@@ -1334,7 +1467,7 @@
       function renderSkeletons() {
         var grid = document.getElementById('stateLoadingGrid');
         grid.innerHTML = '';
-        for (var i = 0; i < 12; i++) {
+        for (var i = 0; i < 18; i++) {
           var card = document.createElement('div');
           card.className = 'skeleton-card';
           card.setAttribute('aria-hidden', 'true');
@@ -1350,34 +1483,47 @@
         }
       }
 
-      // ---------- Pagination (12 box per pagina) ----------
-      function getTotalPages(list) {
-        return list && list.length ? Math.ceil(list.length / ITEMS_PER_PAGE) : 1;
+      // ---------- Continua a visualizzare (18 articoli per blocco) ----------
+      function hasMoreToShow(list, page) {
+        return list && list.length > page * ITEMS_PER_PAGE;
       }
 
       function updatePaginationUI(list, page) {
-        var total = list.length;
-        var totalPages = getTotalPages(list);
-        var start = (page - 1) * ITEMS_PER_PAGE + 1;
-        var end = Math.min(page * ITEMS_PER_PAGE, total);
-        dom.paginationInfo.textContent = total > ITEMS_PER_PAGE
-          ? 'Pagina ' + page + ' di ' + totalPages + ' · Articoli ' + start + '-' + end + ' di ' + total
-          : 'Articoli ' + total + ' (tutti in una pagina)';
-        dom.paginationPrev.disabled = page <= 1;
-        dom.paginationNext.disabled = page >= totalPages;
-        dom.paginationWrap.classList.toggle('u-hidden', totalPages <= 1);
+        var showButton = hasMoreToShow(list, page);
+        dom.paginationWrap.classList.toggle('u-hidden', !showButton);
       }
 
-      // ---------- Render news cards (solo la pagina corrente, 12 per pagina) ----------
+      var currentCreatePostNewsItem = null;
+
+      function openCreatePostOverlay(newsItem) {
+        currentCreatePostNewsItem = newsItem || null;
+        dom.createPostOverlay.classList.add('is-open');
+        dom.createPostOverlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', onCreatePostOverlayKeydown);
+      }
+
+      function closeCreatePostOverlay() {
+        dom.createPostOverlay.classList.remove('is-open');
+        dom.createPostOverlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', onCreatePostOverlayKeydown);
+      }
+
+      function onCreatePostOverlayKeydown(e) {
+        if (e.key === 'Escape' && dom.createPostOverlay.classList.contains('is-open')) {
+          closeCreatePostOverlay();
+        }
+      }
+
+      // ---------- Render news cards (cumulativo: prima 18, poi +18 a ogni click) ----------
       function renderNewsCards(newsList, page) {
         if (!newsList || !newsList.length) return;
         page = page || 1;
         currentDisplayList = newsList;
         currentPage = page;
-        var totalPages = getTotalPages(newsList);
-        var from = (page - 1) * ITEMS_PER_PAGE;
-        var to = from + ITEMS_PER_PAGE;
-        var slice = newsList.slice(from, to);
+        var to = page * ITEMS_PER_PAGE;
+        var slice = newsList.slice(0, to);
 
         var grid = dom.stateSuccess;
         grid.innerHTML = '';
@@ -1405,9 +1551,18 @@
             '<h3 class="news-card__title">' + escapeHtml(title) + '</h3>' +
             '<p class="news-card__meta"><span class="news-card__source">sourceName: ' + escapeHtml(item.source) + '</span> · ' + getRelativeTime(item.publishedAt) + '</p>' +
             '<p class="news-card__excerpt">' + escapeHtml(excerpt) + '</p>' +
+            '<div class="news-card__actions"><button type="button" class="news-card__btn-create" aria-label="Crea post da questa news">Create post</button></div>' +
             '</div>';
 
           grid.appendChild(card);
+          (function (newsItem) {
+            var btn = card.querySelector('.news-card__btn-create');
+            if (btn) btn.addEventListener('click', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              openCreatePostOverlay(newsItem);
+            });
+          })(item);
         });
 
         updatePaginationUI(newsList, page);
@@ -1485,11 +1640,11 @@
               return;
             }
 
-            allNews = news;
+            allNews = sortByPublishedAt(news);
             enableSearchSection();
-            populateSourceDropdown(news);
-            populateCategoryDropdown(news);
-            renderNewsCards(news, 1);
+            populateSourceDropdown(allNews);
+            populateCategoryDropdown(allNews);
+            renderNewsCards(allNews, 1);
             setAppState(APP_STATE.SUCCESS);
             updateLastUpdateLabel();
             updateSearchResultsCount(news.length);
@@ -1526,16 +1681,15 @@
         dom.searchAccordionBtn.setAttribute('aria-expanded', open);
       });
 
-      // Paginazione: Precedente / Successiva
-      dom.paginationPrev.addEventListener('click', function () {
-        if (currentPage <= 1) return;
-        renderNewsCards(currentDisplayList, currentPage - 1);
-      });
-      dom.paginationNext.addEventListener('click', function () {
-        var totalPages = getTotalPages(currentDisplayList);
-        if (currentPage >= totalPages) return;
+      // Continua a visualizzare: mostra altri 18 articoli
+      dom.paginationMore.addEventListener('click', function () {
+        if (!hasMoreToShow(currentDisplayList, currentPage)) return;
         renderNewsCards(currentDisplayList, currentPage + 1);
       });
+
+      // Overlay Create post: apri/chiudi
+      dom.createPostOverlayClose.addEventListener('click', closeCreatePostOverlay);
+      dom.createPostOverlayBackdrop.addEventListener('click', closeCreatePostOverlay);
     })();
   </script>
 </body>
